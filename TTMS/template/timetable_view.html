@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}View Timetable{% endblock %}
+
+{% block content %}
+<div class="timetable-header">
+    <h3 style="margin: 5px 0; font-size: 18px;">Timetable Schedule</h3>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 15px; font-weight: bold;">
+        <span>Year: {{ year }}</span>
+        <span>Course ID: {{ course_id }}</span>
+        <span>Semester: 
+            {% if year == 'I' and semester == 'ODD' %}1st Semester
+            {% elif year == 'I' and semester == 'EVEN' %}2nd Semester
+            {% elif year == 'II' and semester == 'ODD' %}3rd Semester
+            {% elif year == 'II' and semester == 'EVEN' %}4th Semester
+            {% elif year == 'III' and semester == 'ODD' %}5th Semester
+            {% elif year == 'III' and semester == 'EVEN' %}6th Semester
+            {% elif year == 'IV' and semester == 'ODD' %}7th Semester
+            {% elif year == 'IV' and semester == 'EVEN' %}8th Semester
+            {% else %}{{ semester or 'Not Specified' }}
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<div class="timetable-container">
+    {% if timetable and timetable.values()|list|first %}
+    <table class="timetable">
+        <tr>
+            <th>Day</th>
+            <th>P1</th><th>P2</th><th>P3</th>
+            <th>P4</th><th>LUNCH</th><th>P5</th><th>P6</th><th>P7</th>
+        </tr>
+
+        {% for day, periods in timetable.items() %}
+        <tr>
+            <td class="day-cell"><strong>{{ day }}</strong></td>
+            <td>{{ periods[0]|safe }}</td>
+            <td>{{ periods[1]|safe }}</td>
+            <td>{{ periods[2]|safe }}</td>
+            <td>{{ periods[3]|safe }}</td>
+            <td class="lunch-cell" style="background: #f0f0f0;"><strong>LUNCH</strong></td>
+            <td>{{ periods[4]|safe }}</td>
+            <td>{{ periods[5]|safe }}</td>
+            <td>{{ periods[6]|safe }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 30px; color: #666;">
+        <p><strong>No timetable generated yet for Year {{ year }}, Course {{ course_id }}</strong></p>
+        <p>Please ask the admin to generate a timetable first.</p>
+    </div>
+    {% endif %}
+</div>
+
+<br>
+
+<div style="text-align: center;">
+    <a class="btn" href="/print?year={{ year }}&course_id={{ course_id }}&semester={{ semester }}" target="_blank">Print Timetable</a>
+</div>
+{% endblock %}

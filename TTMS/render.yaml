@@ -1,0 +1,12 @@
+# Render deployment configuration for TTMS
+# Docs: https://render.com/docs/deploy-flask
+
+[build]
+  command = "pip install -r requirements.txt"
+
+[start]
+  command = "gunicorn --bind 0.0.0.0:$PORT backend.app:app"
+
+[env]
+  FLASK_ENV = "production"
+  # Set DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, SECRET_KEY in Render dashboard

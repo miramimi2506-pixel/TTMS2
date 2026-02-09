@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Admin Dashboard</h1>
+    
+    <div style="margin-bottom: 30px;">
+        <h3>Quick Actions</h3>
+        <a href="/view_subjects" class="btn btn-info">View All Subjects</a>
+        <a href="/view_faculty" class="btn btn-info">View All Faculty</a>
+        <a href="/admin/view_timetables" class="btn btn-info">View All Timetables</a>
+    </div>
+
+    <h2>Generate Timetable</h2>
+
+    <form method="POST" action="/generate">
+        <div class="form-row">
+            <div>
+                <label>Year</label>
+                <select name="year" required>
+                    <option>I</option>
+                    <option>II</option>
+                    <option>III</option>
+                    <option>IV</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Course</label>
+                <select name="course_id" required>
+                    <option value="1">AI & DS</option>
+                    <option value="2">CSE</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Semester</label>
+                <select name="semester" required>
+                    <option value="ODD">ODD</option>
+                    <option value="EVEN">EVEN</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Generate Timetable</button>
+    </form>
+    
+    <h2>Add Subject</h2>
+
+    <form method="POST" action="/add_subject">
+        <div class="form-row">
+            <div>
+                <label>Subject Code</label>
+                <input type="text" name="code" required>
+            </div>
+
+            <div>
+                <label>Subject Name</label>
+                <input type="text" name="name" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label>Year</label>
+                <select name="year" required>
+                    <option value="">-- Select Year --</option>
+                    <option value="I">I</option>
+                    <option value="II">II</option>
+                    <option value="III">III</option>
+                    <option value="IV">IV</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Course</label>
+                <select name="course_id" required>
+                    <option value="">-- Select Course --</option>
+                    <option value="1">AI & DS</option>
+                    <option value="2">CSE</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Semester</label>
+                <select name="semester" required>
+                    <option value="">-- Select Semester --</option>
+                    <option value="ODD">ODD</option>
+                    <option value="EVEN">EVEN</option>
+                </select>
+            </div>
+        </div>
+
+    <div class="form-row">
+        <div>
+            <label>Weekly Hours</label>
+            <input type="number" name="weekly_hours" value="4" required>
+        </div>
+    </div>
+
+    <br><br>
+    <button type="submit">Add Subject</button>
+</form>
+
+<h2>Add Faculty</h2>
+
+<form method="POST" action="/add_faculty">
+    <label>Faculty Code</label>
+    <input type="text" name="staff_code" placeholder="e.g., FAC001" required>
+
+    <label>Faculty Name</label>
+    <input type="text" name="name" required>
+
+    <label>Department</label>
+    <input type="text" name="department" required>
+
+    <label>Max Hours</label>
+    <input type="number" name="max_hours" value="20" required>
+
+    <label>Subjects Handled</label>
+    <select name="subjects" multiple required>
+        {% for sub in subjects %}
+            <option value="{{ sub.id }}">
+                {{ sub.code }} - {{ sub.name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+    <button type="submit">Add Faculty</button>
+</form>
+{% endblock %}

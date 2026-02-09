@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Subject</h2>
+    
+    <a href="/view_subjects" class="btn btn-secondary mb-3">Back to Subjects List</a>
+    
+    <form method="POST" action="/edit_subject/{{ subject.id }}">
+        <div class="form-group">
+            <label>Subject Code</label>
+            <input type="text" name="code" value="{{ subject.code }}" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Subject Name</label>
+            <input type="text" name="name" value="{{ subject.name }}" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Year</label>
+            <select name="year" required class="form-control">
+                <option value="I" {% if subject.year == 'I' %}selected{% endif %}>I</option>
+                <option value="II" {% if subject.year == 'II' %}selected{% endif %}>II</option>
+                <option value="III" {% if subject.year == 'III' %}selected{% endif %}>III</option>
+                <option value="IV" {% if subject.year == 'IV' %}selected{% endif %}>IV</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Course</label>
+            <select name="course_id" required class="form-control">
+                <option value="1" {% if subject.course_id == 1 %}selected{% endif %}>CSE</option>
+                <option value="2" {% if subject.course_id == 2 %}selected{% endif %}>AIDS</option>
+                <option value="3" {% if subject.course_id == 3 %}selected{% endif %}>ECE</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Weekly Hours</label>
+            <input type="number" name="weekly_hours" value="{{ subject.weekly_hours }}" required class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Subject</button>
+        <a href="/view_subjects" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

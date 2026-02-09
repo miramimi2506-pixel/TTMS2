@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Timetable{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .notification {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-weight: bold;
+            animation: slideDown 0.3s ease-in;
+        }
+        
+        .notification.success {
+            background-color: #4CAF50;
+            color: white;
+            border: 1px solid #45a049;
+        }
+        
+        .notification.error {
+            background-color: #f44336;
+            color: white;
+            border: 1px solid #da190b;
+        }
+        
+        .notification.info {
+            background-color: #2196F3;
+            color: white;
+            border: 1px solid #0b7dda;
+        }
+        
+        .notification-close {
+            float: right;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Timetable Management</h1>
+    <nav>
+        <a href="/">Admin</a>
+        <a href="/faculty">Faculty</a>
+        <a href="/student">Student</a>
+        <a href="/logout">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+    <!-- Notification Display -->
+    {% if request.args.get('success') %}
+        <div class="notification success" id="notification">
+            <span class="notification-close" onclick="closeNotification()">&times;</span>
+            {% if request.args.get('success') == 'subject_added' %}
+                Subject added successfully!
+            {% elif request.args.get('success') == 'faculty_added' %}
+                Faculty added successfully!
+            {% elif request.args.get('success') == 'timetable_generated' %}
+                Timetable generated successfully!
+            {% else %}
+                Operation completed successfully!
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    {% if request.args.get('error') %}
+        <div class="notification error" id="notification">
+            <span class="notification-close" onclick="closeNotification()">&times;</span>
+            Error: {{ request.args.get('error') }}
+        </div>
+    {% endif %}
+    
+    {% block content %}{% endblock %}
+</div>
+
+<footer>
+    © 2026 College Timetable System
+</footer>
+
+<script>
+function closeNotification() {
+    const notification = document.getElementById('notification');
+    if (notification) {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
+}
+
+// Auto-close notification after 5 seconds
+window.addEventListener('load', function() {
+    const notification = document.getElementById('notification');
+    if (notification) {
+        setTimeout(closeNotification, 5000);
+    }
+});
+</script>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

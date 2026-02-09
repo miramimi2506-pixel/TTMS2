@@ -1,0 +1,15 @@
+# Railway deployment configuration for TTMS
+# Docs: https://docs.railway.app/deploy/configure
+
+[build]
+  # Install dependencies
+  command = "pip install -r requirements.txt"
+
+[start]
+  # Start the app with Gunicorn
+  command = "gunicorn --bind 0.0.0.0:$PORT backend.app:app"
+
+[env]
+  # These will be set in Railway dashboard or .env
+  FLASK_ENV = "production"
+  # SECRET_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME should be set in Railway variables

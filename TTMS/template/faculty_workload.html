@@ -1,0 +1,19 @@
+<table>
+    <tr>
+        <th>Faculty</th>
+        <th>Department</th>
+        <th>Max Hours</th>
+        <th>Assigned</th>
+        <th>Remaining</th>
+    </tr>
+
+    {% for f in workload %}
+    <tr>
+        <td>{{ f[2] }}</td>
+        <td>{{ f[3] }}</td>
+        <td>{{ f[4] }}</td>
+        <td>{{ f[5] }}</td>
+        <td>{{ f[6] }}</td>
+    </tr>
+    {% endfor %}
+</table>

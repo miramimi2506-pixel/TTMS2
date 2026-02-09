@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}Master Timetable{% endblock %}
+
+{% block content %}
+<div class="timetable-header">
+    <h1 style="margin: 5px 0; font-size: 24px;">Master Timetable</h1>
+    <p style="color: #666; margin-top: 10px;">View timetables for all years - Admin Only</p>
+    <div id="lastUpdate" style="font-size: 12px; color: #888; margin-top: 5px;">Last updated: Loading...</div>
+</div>
+
+<div class="timetable-container" style="margin-top: 30px;">
+    <!-- FILTERS -->
+    <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <div>
+            <label for="yearFilter" style="font-weight: bold; margin-right: 10px;">Filter by Year:</label>
+            <select id="yearFilter" onchange="loadTimetable()" style="padding: 8px; font-size: 16px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="all">All Years</option>
+                <option value="I">1st Year</option>
+                <option value="II">2nd Year</option>
+                <option value="III">3rd Year</option>
+                <option value="IV">4th Year</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="courseFilter" style="font-weight: bold; margin-right: 10px;">Filter by Course:</label>
+            <select id="courseFilter" onchange="loadTimetable()" style="padding: 8px; font-size: 16px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="">All Courses</option>
+                <!-- Courses will be loaded dynamically -->
+            </select>
+        </div>
+
+        <div>
+            <button onclick="loadTimetable()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh</button>
+            <button onclick="testSocketConnection()" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">Test Connection</button>
+        </div>
+
+        <div id="statusIndicator" style="font-size: 14px; color: #666;">
+            <span id="connectionStatus">Connecting...</span>
+            <span id="debugInfo" style="margin-left: 20px; font-size: 12px;"></span>
+        </div>
+    </div>
+
+    <!-- TIMETABLE TABLE -->
+    <table border="1" width="100%" style="border-collapse: collapse; margin-top: 20px;">
+        <thead style="background-color: #f5f5f5;" id="tableHead">
+            <tr>
+                <th style="padding: 12px;">Day</th>
+                <!-- Periods will be populated by JavaScript -->
+            </tr>
+        </thead>
+        <tbody id="timetableBody" style="text-align: center;">
+            <tr>
+                <td colspan="8" style="padding: 20px; color: #999;">Loading timetable...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<br><br>
+<div style="text-align: center;">
+    <a class="btn" href="/admin" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Back to Admin Dashboard</a>
+</div>
+
+<!-- SocketIO library -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+let periods = [];
+let socket;
+let currentFilters = { year: 'all', course_id: '' };
+let lastUpdateTimestamp = null;
+
+// Initialize SocketIO connection
+function initSocketIO() {
+    socket = io();
+
+    socket.on('connect', function() {
+        console.log('Connected to server');
+        document.getElementById('connectionStatus').innerHTML = '<span style="color: green;">●</span> Connected';
+        document.getElementById('debugInfo').innerHTML = 'Socket ready';
+        socket.emit('join_master_timetable', { page: 'master_timetable' });
+    });
+
+    socket.on('disconnect', function() {
+        console.log('Disconnected from server');
+        document.getElementById('connectionStatus').innerHTML = '<span style="color: red;">●</span> Disconnected';
+        document.getElementById('debugInfo').innerHTML = 'Socket disconnected';
+    });
+
+    socket.on('timetable_changed', function(data) {
+        console.log('Timetable changed notification:', data);
+        document.getElementById('debugInfo').innerHTML = `Update received at ${new Date().toLocaleTimeString()}`;
+        // Auto-refresh when changes are detected
+        loadTimetable();
+    });
+
+    socket.on('timetable_update', function(data) {
+        console.log('Received timetable update:', data);
+        document.getElementById('debugInfo').innerHTML = `Data update at ${new Date().toLocaleTimeString()}`;
+        updateTimetableDisplay(data);
+    });
+
+    socket.on('status', function(data) {
+        console.log('Status:', data.message);
+        document.getElementById('debugInfo').innerHTML = data.message;
+    });
+
+    socket.on('error', function(data) {
+        console.error('Socket error:', data.message);
+        document.getElementById('debugInfo').innerHTML = `Error: ${data.message}`;
+        showError('Connection error: ' + data.message);
+    });
+}
+
+// Fetch periods from backend
+function loadPeriods() {
+    return fetch('/api/periods')
+        .then(res => res.json())
+        .then(data => {
+            periods = data;
+            buildTableHeader();
+        })
+        .catch(error => {
+            console.error('Error loading periods:', error);
+            // Fallback to default periods
+            periods = [
+                {period_no: 1, start_time: '09:30', end_time: '10:20'},
+                {period_no: 2, start_time: '10:20', end_time: '11:10'},
+                {period_no: 3, start_time: '11:20', end_time: '12:10'},
+                {period_no: 4, start_time: '12:10', end_time: '13:00'},
+                {period_no: 5, start_time: '14:00', end_time: '14:50'},
+                {period_no: 6, start_time: '14:50', end_time: '15:40'}
+            ];
+            buildTableHeader();
+        });
+}
+
+// Load courses for filter dropdown
+function loadCourses() {
+    return fetch('/api/courses')
+        .then(res => res.json())
+        .then(data => {
+            const courseFilter = document.getElementById('courseFilter');
+            courseFilter.innerHTML = '<option value="">All Courses</option>';
+            data.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course.id;
+                option.textContent = course.name;
+                courseFilter.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading courses:', error);
+        });
+}
+
+// Build table header with periods
+function buildTableHeader() {
+    const thead = document.getElementById('tableHead');
+    let headerHTML = '<tr><th style="padding: 12px;">Day</th>';
+
+    periods.forEach(p => {
+        const start = p.start_time.substring(0, 5);
+        const end = p.end_time.substring(0, 5);
+        headerHTML += `<th style="padding: 12px;">P${p.period_no}<br/><small>${start}–${end}</small></th>`;
+    });
+
+    headerHTML += '</tr>';
+    thead.innerHTML = headerHTML;
+}
+
+// Load timetable data
+function loadTimetable() {
+    const year = document.getElementById('yearFilter').value;
+    const courseId = document.getElementById('courseFilter').value;
+    const body = document.getElementById('timetableBody');
+
+    currentFilters = { year: year, course_id: courseId };
+
+    // Show loading state
+    const colSpan = periods.length + 1;
+    body.innerHTML = `<tr><td colspan="${colSpan}" style="padding: 20px; color: #999;">Loading timetable...</td></tr>`;
+
+    fetch(`/get_timetable?year=${year}&course_id=${courseId}`)
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            return res.json();
+        })
+        .then(data => {
+            updateTimetableDisplay(data);
+        })
+        .catch(error => {
+            console.error('Error loading timetable:', error);
+            body.innerHTML = `<tr><td colspan="${colSpan}" style="padding: 20px; color: #999;">Error loading timetable. <button onclick="loadTimetable()">Retry</button></td></tr>`;
+        });
+}
+
+// Update timetable display with data
+function updateTimetableDisplay(data) {
+    const body = document.getElementById('timetableBody');
+    const colSpan = periods.length + 1;
+
+    // Update last update timestamp
+    if (data.last_update) {
+        const updateTime = new Date(data.last_update);
+        document.getElementById('lastUpdate').textContent = `Last updated: ${updateTime.toLocaleString()}`;
+        lastUpdateTimestamp = data.last_update;
+    }
+
+    if (!data.timetable || Object.keys(data.timetable).length === 0) {
+        body.innerHTML = `<tr><td colspan="${colSpan}" style="padding: 20px; color: #999;">No timetable data available</td></tr>`;
+        return;
+    }
+
+    body.innerHTML = '';
+
+    // Days in order
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    days.forEach(day => {
+        let html = `<tr><td style="padding: 12px; font-weight: bold; background-color: #f9f9f9;">${day}</td>`;
+
+        // Build cells for each period
+        for (let i = 1; i <= periods.length; i++) {
+            const periodKey = `p${i}`;
+            const slotData = data.timetable[day] && data.timetable[day][periodKey];
+
+            if (slotData) {
+                // Rich display with all information
+                html += `<td style="padding: 8px; font-size: 12px; line-height: 1.3;" title="${slotData.subject_name} - ${slotData.faculty_name} (${slotData.staff_code}) - ${slotData.room_code}">
+                    <div style="font-weight: bold; color: #2c3e50;">${slotData.subject_code}</div>
+                    <div style="color: #7f8c8d; font-size: 11px;">${slotData.faculty_name.split(' ')[0]}</div>
+                    <div style="color: #3498db; font-size: 11px;">${slotData.room_code}</div>
+                    <div style="color: #e74c3c; font-size: 10px;">${slotData.course_name}</div>
+                </td>`;
+            } else {
+                html += `<td style="padding: 12px; background-color: #f8f9fa;">—</td>`;
+            }
+        }
+
+        html += '</tr>';
+        body.innerHTML += html;
+    });
+}
+
+// Show error message
+function showError(message) {
+    const body = document.getElementById('timetableBody');
+    const colSpan = periods.length + 1;
+    body.innerHTML = `<tr><td colspan="${colSpan}" style="padding: 20px; color: #e74c3c;">${message}</td></tr>`;
+}
+
+// Request manual update via socket
+function requestUpdate() {
+    if (socket && socket.connected) {
+        socket.emit('request_timetable_update', currentFilters);
+    }
+}
+
+// Test SocketIO connection
+function testSocketConnection() {
+    if (socket) {
+        if (socket.connected) {
+            document.getElementById('debugInfo').innerHTML = 'Socket connected ✓';
+            // Test emitting an event
+            socket.emit('join_master_timetable', { test: true });
+            document.getElementById('debugInfo').innerHTML += ' | Test event sent';
+        } else {
+            document.getElementById('debugInfo').innerHTML = 'Socket disconnected ✗';
+        }
+    } else {
+        document.getElementById('debugInfo').innerHTML = 'Socket not initialized ✗';
+    }
+}
+
+// Initialize everything when page loads
+window.addEventListener('load', async function() {
+    initSocketIO();
+    await Promise.all([loadPeriods(), loadCourses()]);
+    loadTimetable();
+
+    // Set up periodic refresh as fallback (every 30 seconds)
+    setInterval(() => {
+        if (!socket || !socket.connected) {
+            console.log('Socket not connected, using fallback refresh');
+            loadTimetable();
+        }
+    }, 30000); // Every 30 seconds as fallback
+
+    // Also refresh when page becomes visible (user returns to tab)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            loadTimetable();
+        }
+    });
+});
+</script>
+{% endblock %}
